@@ -1,0 +1,147 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <link rel="stylesheet" href="xterm.css" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #070B10;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #terminal {
+      position: absolute;
+      inset: 0;
+      padding: 6px 8px 8px 10px;
+      box-sizing: border-box;
+    }
+    .xterm .xterm-viewport {
+      background-color: transparent !important;
+    }
+    .xterm-viewport::-webkit-scrollbar {
+      width: 6px;
+    }
+    .xterm-viewport::-webkit-scrollbar-thumb {
+      background: #243244;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+<div id="terminal"></div>
+
+<script src="xterm.js"></script>
+<script src="addon-fit.js"></script>
+<script>
+  (function () {
+    const term = new Terminal({
+      allowProposedApi: true,
+      convertEol: false,
+      cursorBlink: true,
+      cursorStyle: 'bar',
+      fontFamily: "'JetBrains Mono', 'Roboto Mono', monospace",
+      fontSize: 14,
+      fontWeight: '400',
+      fontWeightBold: '700',
+      letterSpacing: 0,
+      lineHeight: 1.15,
+      scrollback: 8000,
+      theme: {
+        background: '#070B10',
+        foreground: '#D7E2EE',
+        cursor: '#22D3EE',
+        cursorAccent: '#070B10',
+        selectionBackground: '#22D3EE55',
+        black: '#0B1118',
+        red: '#FB7185',
+        green: '#34D399',
+        yellow: '#FBBF24',
+        blue: '#60A5FA',
+        magenta: '#C084FC',
+        cyan: '#22D3EE',
+        white: '#D7E2EE',
+        brightBlack: '#64748B',
+        brightRed: '#FDA4AF',
+        brightGreen: '#6EE7B7',
+        brightYellow: '#FCD34D',
+        brightBlue: '#93C5FD',
+        brightMagenta: '#D8B4FE',
+        brightCyan: '#67E8F9',
+        brightWhite: '#F8FAFC'
+      }
+    });
+
+    const fit = new FitAddon.FitAddon();
+    term.loadAddon(fit);
+    term.open(document.getElementById('terminal'));
+
+    let ready = false;
+
+    function fitAndReport() {
+      try {
+        fit.fit();
+        if (ready && window.Android) {
+          Android.onResize(term.cols, term.rows);
+        }
+      } catch (e) {}
+    }
+
+    window.termWrite = function (b64) {
+      try {
+        const bin = atob(b64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        term.write(bytes);
+      } catch (e) {}
+    };
+
+    window.termSend = function (text) {
+      if (window.Android) Android.onData(text);
+    };
+
+    window.termClear = function () {
+      term.clear();
+      term.focus();
+    };
+
+    window.termSetFont = function (px) {
+      term.options.fontSize = px;
+      fitAndReport();
+    };
+
+    window.termRefit = fitAndReport;
+    window.termFocus = function () { term.focus(); };
+
+    term.onData(function (data) {
+      if (window.Android) Android.onData(data);
+    });
+
+    term.onResize(function (size) {
+      if (window.Android) Android.onResize(size.cols, size.rows);
+    });
+
+    window.addEventListener('resize', fitAndReport);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', fitAndReport);
+    }
+
+    document.getElementById('terminal').addEventListener('click', function () {
+      term.focus();
+    });
+
+    setTimeout(function () {
+      fitAndReport();
+      ready = true;
+      fitAndReport();
+      term.focus();
+      if (window.Android) Android.onReady();
+    }, 60);
+  })();
+</script>
+</body>
+</html>
