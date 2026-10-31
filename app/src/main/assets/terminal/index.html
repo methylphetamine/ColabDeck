@@ -34,6 +34,7 @@
 </head>
 <body>
 <div id="terminal"></div>
+<div id="dbg" style="position:fixed;right:4px;bottom:4px;font:10px monospace;color:#22D3EE;background:#070B10cc;padding:2px 6px;border-radius:4px;pointer-events:none;z-index:9999"></div>
 
 <script src="xterm.js"></script>
 <script src="addon-fit.js"></script>
@@ -85,8 +86,15 @@
     function fitAndReport() {
       try {
         const el = document.getElementById('terminal');
-        if (!el || el.clientWidth < 10 || el.clientHeight < 10) return;
+        if (!el) return;
+        if (el.clientWidth < 10 || el.clientHeight < 10) {
+          // Defer until the WebView actually has a size.
+          requestAnimationFrame(fitAndReport);
+          return;
+        }
         fit.fit();
+        var dbg = document.getElementById('dbg');
+        if (dbg) dbg.textContent = 'r' + term.rows + ' c' + term.cols + ' | ' + (document.getElementById('terminal').clientHeight) + 'px';
         if (term.rows > 1 && window.Android) {
           Android.onResize(term.cols, term.rows);
         }
@@ -149,13 +157,13 @@
         term.focus();
         if (window.Android) Android.onReady();
       } else if (attempts > 0) {
-        setTimeout(function () { waitReady(attempts - 1); }, 80);
+        requestAnimationFrame(function () { waitReady(attempts - 1); });
       } else {
         ready = true;
         term.focus();
         if (window.Android) Android.onReady();
       }
-    })(25);
+    })(120);
   })();
 </script>
 </body>
