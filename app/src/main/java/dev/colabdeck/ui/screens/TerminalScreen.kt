@@ -333,12 +333,16 @@ fun TerminalScreen(
                 .navigationBarsPadding()
                 .imePadding()
         ) {
-            TerminalWebView(
-                controller = controller,
+            Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-            )
+            ) {
+                TerminalWebView(
+                    controller = controller,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
 
             if (status != TermStatus.CONNECTED) {
                 TerminalBanner(

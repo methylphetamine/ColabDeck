@@ -50,12 +50,17 @@ class TerminalController {
     @SuppressLint("SetJavaScriptEnabled")
     fun attach(view: WebView) {
         webView = view
+        view.layoutParams = android.view.ViewGroup.LayoutParams(
+            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+            android.view.ViewGroup.LayoutParams.MATCH_PARENT
+        )
         view.settings.javaScriptEnabled = true
         view.settings.domStorageEnabled = true
         view.settings.allowContentAccess = false
         view.settings.allowFileAccess = false
-        view.settings.loadWithOverviewMode = true
-        view.settings.useWideViewPort = true
+        view.settings.loadWithOverviewMode = false
+        view.settings.useWideViewPort = false
+        view.settings.textZoom = 100
         view.setBackgroundColor(android.graphics.Color.parseColor("#070B10"))
         view.addJavascriptInterface(bridge, "Android")
         view.webViewClient = object : WebViewClient() {
