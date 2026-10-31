@@ -101,7 +101,12 @@ class AuthRepository(
             if (pasted.clientId.isNotBlank()) prefs.clientId = pasted.clientId
             if (pasted.clientSecret.isNotBlank()) secure.put(KEY_CLIENT_SECRET, pasted.clientSecret)
 
-            val info = withContext(Dispatchers.IO) { fetchUserInfo(pasted.accessToken) }
+            // Validate against the Colab control plane, not userinfo: a token
+            // authorized only for the Colab scope cannot call userinfo.
+            withContext(Dispatchers.IO) { validateColabToken(pasted.accessToken) }
+
+            prefs.email = ""
+            prefs.displayName = ""
             storeTokens(
                 OAuthTokens(
                     accessToken = pasted.accessToken,
@@ -109,7 +114,7 @@ class AuthRepository(
                     idToken = pasted.idToken,
                     expiresInSeconds = pasted.expiresInSeconds
                 ),
-                info
+                info = null
             )
         } catch (e: Exception) {
             _state.value = AuthState.Error(e.message ?: "Could not use that access token.")
@@ -213,10 +218,38 @@ class AuthRepository(
     }
 
     /**
-     * Best-effort profile lookup. A token authorized only for the Colab scope
-     * (for example one issued by the OAuth Playground) is valid for the Colab
-     * API but is not allowed to call userinfo, so a 403 there must not block
-     * sign-in. Only a 401 means the token itself is bad.
+     * Checks a pasted token against Colab's control plane. This is the only
+     * scope the app needs, and unlike userinfo it accepts a token that carries
+     * just https://www.googleapis.com/auth/colaboratory.
+     */
+    private fun validateColabToken(accessToken: String) {
+        val request = Request.Builder()
+            .url("https://colab.research.google.com/tun/m/assignments?authuser=0")
+            .header("Authorization", "Bearer $accessToken")
+            .header("Accept", "application/json")
+            .header("X-Colab-Client-Agent", "colabdeck")
+            .get()
+            .build()
+
+        client.newCall(request).execute().use { response ->
+            when (response.code) {
+                401 -> throw AuthException(
+                    "Google rejected this token. It was revoked or has expired — generate a new one."
+                )
+                403 -> throw AuthException(
+                    "This Google account is not allowed to use Colab (HTTP 403)."
+                )
+            }
+            // Other non-2xx responses are transient backend/quota issues and
+            // should not block storing a token that Google just issued.
+        }
+    }
+
+    /**
+     * Best-effort profile lookup for the interactive OAuth flow. A token
+     * authorized only for the Colab scope is valid for the Colab API but is
+     * not allowed to call userinfo, so a 403 there must not block sign-in.
+     * Only a 401 means the token itself is bad.
      */
     private fun fetchUserInfo(accessToken: String): UserInfo? {
         val request = Request.Builder()
