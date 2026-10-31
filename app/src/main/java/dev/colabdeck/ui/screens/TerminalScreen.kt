@@ -330,9 +330,8 @@ fun TerminalScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .then(
-                    if (imeVisible) Modifier.imePadding() else Modifier.navigationBarsPadding()
-                )
+                .navigationBarsPadding()
+                .imePadding()
         ) {
             TerminalWebView(
                 controller = controller,

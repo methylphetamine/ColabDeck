@@ -184,11 +184,10 @@ class SshManager(private val keys: SshKeyManager) {
             ssh.setConfig("HashKnownHosts", "no")
             ssh.connect(25_000)
 
-            val channel = ssh.openChannel("exec") as ChannelExec
-            channel.setCommand("cd /content 2>/dev/null; exec \${SHELL:-/bin/bash} -l")
+            val channel = ssh.openChannel("shell") as ChannelShell
             channel.setPty(true)
             channel.setPtyType("xterm-256color", 80, 24, 640, 480)
-            channel.setInputStream(null)
+            channel.setEnv("TERM", "xterm-256color")
             channel.connect(15_000)
 
             return JschChannel(ssh, channel, transport)
