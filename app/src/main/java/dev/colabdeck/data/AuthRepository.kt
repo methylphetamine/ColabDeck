@@ -212,7 +212,13 @@ class AuthRepository(
         }
     }
 
-    private fun fetchUserInfo(accessToken: String): UserInfo {
+    /**
+     * Best-effort profile lookup. A token authorized only for the Colab scope
+     * (for example one issued by the OAuth Playground) is valid for the Colab
+     * API but is not allowed to call userinfo, so a 403 there must not block
+     * sign-in. Only a 401 means the token itself is bad.
+     */
+    private fun fetchUserInfo(accessToken: String): UserInfo? {
         val request = Request.Builder()
             .url("https://www.googleapis.com/oauth2/v3/userinfo")
             .header("Authorization", "Bearer $accessToken")
@@ -220,21 +226,22 @@ class AuthRepository(
             .build()
 
         client.newCall(request).execute().use { response ->
-            val body = response.body?.string().orEmpty()
             if (!response.isSuccessful) {
-                throw AuthException(
-                    if (response.code == 401) {
+                if (response.code == 401) {
+                    throw AuthException(
                         "Google rejected this access token. It may be expired or missing the Colab scope."
-                    } else {
-                        "Could not verify the Google token (HTTP ${response.code})."
-                    }
-                )
+                    )
+                }
+                return null
             }
-            val obj = json.parseToJsonElement(body).jsonObject
-            return UserInfo(
-                email = obj["email"]?.jsonPrimitive?.content.orEmpty(),
-                name = obj["name"]?.jsonPrimitive?.content.orEmpty()
-            )
+            val body = response.body?.string().orEmpty()
+            return runCatching {
+                val obj = json.parseToJsonElement(body).jsonObject
+                UserInfo(
+                    email = obj["email"]?.jsonPrimitive?.content.orEmpty(),
+                    name = obj["name"]?.jsonPrimitive?.content.orEmpty()
+                )
+            }.getOrNull()
         }
     }
 
