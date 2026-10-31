@@ -132,32 +132,44 @@ class ColabApi(private val auth: AuthRepository) {
         headers: Map<String, String> = emptyMap(),
         body: RequestBody? = null
     ): String {
-        val token = auth.accessToken()
-        val requestBuilder = Request.Builder()
-            .url(url)
-            .header("Authorization", "Bearer $token")
-            .header("Accept", "application/json")
-            .header("X-Colab-Client-Agent", "colabdeck")
+        var attemptedRefresh = false
+        while (true) {
+            val token = auth.accessToken()
+            val requestBuilder = Request.Builder()
+                .url(url)
+                .header("Authorization", "Bearer $token")
+                .header("Accept", "application/json")
+                .header("X-Colab-Client-Agent", "colabdeck")
 
-        headers.forEach { (key, value) -> requestBuilder.header(key, value) }
+            headers.forEach { (key, value) -> requestBuilder.header(key, value) }
 
-        when (method.uppercase()) {
-            "POST" -> requestBuilder.post(body ?: EMPTY_BODY)
-            else -> requestBuilder.get()
-        }
-
-        return withContext(Dispatchers.IO) {
-            client.newCall(requestBuilder.build()).execute().use { response ->
-                val responseBody = response.body?.string().orEmpty()
-                if (!response.isSuccessful) {
-                    if (response.code == 401) auth.markExpired()
-                    throw ApiException(
-                        response.code,
-                        friendlyError(response.code, responseBody, url.toString())
-                    )
-                }
-                stripXssi(responseBody)
+            when (method.uppercase()) {
+                "POST" -> requestBuilder.post(body ?: EMPTY_BODY)
+                else -> requestBuilder.get()
             }
+
+            val result = withContext(Dispatchers.IO) {
+                client.newCall(requestBuilder.build()).execute().use { response ->
+                    val responseBody = response.body?.string().orEmpty()
+                    if (!response.isSuccessful) {
+                        if (response.code == 401 && !attemptedRefresh && auth.canRefresh) {
+                            return@use Pair(null, 401)
+                        }
+                        if (response.code == 401) auth.markExpired()
+                        throw ApiException(
+                            response.code,
+                            friendlyError(response.code, responseBody, url.toString())
+                        )
+                    }
+                    Pair(stripXssi(responseBody), 200)
+                }
+            }
+
+            if (result.first != null) return result.first!!
+
+            // 401 with a refresh token available: invalidate and retry once.
+            attemptedRefresh = true
+            auth.invalidateAccessToken()
         }
     }
 

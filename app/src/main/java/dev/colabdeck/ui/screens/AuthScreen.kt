@@ -90,6 +90,8 @@ fun AuthScreen(
     var clientId by remember { mutableStateOf(vm.clientId()) }
     var clientSecret by remember { mutableStateOf(vm.clientSecret()) }
     var token by remember { mutableStateOf("") }
+    var colabCode by remember { mutableStateOf("") }
+    var colabOpened by remember { mutableStateOf(false) }
 
     val loading = auth is AuthState.Loading
 
@@ -169,6 +171,17 @@ fun AuthScreen(
                         )
                     }
                 )
+                Tab(
+                    selected = tab == 2,
+                    onClick = { tab = 2 },
+                    text = {
+                        Text(
+                            "Colab login",
+                            color = if (tab == 2) Cyan else TextMuted,
+                            fontWeight = if (tab == 2) FontWeight.SemiBold else FontWeight.Normal
+                        )
+                    }
+                )
             }
 
             Spacer(Modifier.height(18.dp))
@@ -224,7 +237,7 @@ fun AuthScreen(
                     }
                 }
 
-                else -> {
+                1 -> {
                     Text(
                         "Paste a Google OAuth access token with the colaboratory scope. Quick way: OAuth 2.0 Playground → authorize the scope → exchange the code → copy Access token.",
                         style = MaterialTheme.typography.bodySmall,
@@ -289,6 +302,85 @@ fun AuthScreen(
                         }
                     ) {
                         Text("Copy Colab scope", color = TextMuted)
+                    }
+                }
+                2 -> {
+                    Text(
+                        "Sign in with Google's official Colab client. No Google Cloud project or client ID needed. " +
+                            "The app opens your browser; Google then shows an authorization code to paste back here.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextMuted
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Button(
+                        onClick = {
+                            val url = vm.colabCliAuthUrl()
+                            colabOpened = true
+                            openUrl(context, url)
+                        },
+                        enabled = !loading,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Cyan,
+                            contentColor = Ink,
+                            disabledContainerColor = Cyan.copy(alpha = 0.35f)
+                        ),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Icon(Icons.Rounded.OpenInNew, null, modifier = Modifier.size(18.dp), tint = Ink)
+                        Spacer(Modifier.width(9.dp))
+                        Text("Open Google sign-in", fontWeight = FontWeight.SemiBold)
+                    }
+                    if (colabOpened) {
+                        Spacer(Modifier.height(14.dp))
+                        Text(
+                            "After approving, Google's page shows a code starting with 4/0A… Paste it here:",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = colabCode,
+                            onValueChange = { colabCode = it },
+                            label = { Text("Authorization code") },
+                            placeholder = { Text("4/0A…") },
+                            minLines = 3,
+                            maxLines = 5,
+                            modifier = Modifier.fillMaxWidth(),
+                            textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                            colors = fieldColors(),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        Row {
+                            TextButton(onClick = { colabCode = readClipboard(context) }) {
+                                Text("Paste", color = Cyan)
+                            }
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        Button(
+                            onClick = {
+                                vm.completeColabCliSignIn(colabCode) { onBack() }
+                            },
+                            enabled = !loading && colabCode.isNotBlank(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Cyan,
+                                contentColor = Ink,
+                                disabledContainerColor = Cyan.copy(alpha = 0.35f)
+                            ),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            if (loading) {
+                                CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = Ink)
+                                Spacer(Modifier.width(9.dp))
+                            }
+                            Text("Exchange code", fontWeight = FontWeight.SemiBold)
+                        }
                     }
                 }
             }

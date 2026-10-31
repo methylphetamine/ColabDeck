@@ -69,6 +69,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun colabCliAuthUrl(): String = container.auth.colabCliAuthUrl()
+
+    fun completeColabCliSignIn(code: String, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            runCatching { container.auth.completeColabCliSignIn(code) }
+                .onSuccess {
+                    onSuccess()
+                    container.sessions.refresh()
+                    emit("Signed in to Google")
+                }
+                .onFailure { emit(it.message ?: "Google sign-in failed.") }
+        }
+    }
+
     fun signOut() {
         container.auth.signOut()
         emit("Signed out")

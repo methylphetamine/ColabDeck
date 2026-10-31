@@ -16,8 +16,11 @@ import kotlinx.serialization.json.longOrNull
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.net.URLEncoder
+import java.util.Base64
 import java.util.concurrent.TimeUnit
-
+import java.security.MessageDigest
+import java.security.SecureRandom
 class AuthRepository(
     private val prefs: Prefs,
     private val secure: SecureStore
@@ -140,8 +143,109 @@ class AuthRepository(
         }
     }
 
-    fun updateClientConfig(clientId: String, clientSecret: String) {
-        prefs.clientId = clientId.trim()
+    /**
+     * Builds the authorization URL for Google's official Colab CLI OAuth client
+     * (the same client `colab auth login` uses). No Google Cloud project or
+     * client ID is required from the user: the flow is the remote copy-paste
+     * one (PKCE + https://sdk.cloud.google.com/applicationdefaultauthcode.html),
+     * which works on a phone because the landing page prints the code.
+     *
+     * The PKCE verifier is stored (encrypted) so it survives the trip to the
+     * browser and back; call [completeColabCliSignIn] with the pasted code.
+     */
+    fun colabCliAuthUrl(): String {
+        val verifier = randomPkceVerifier()
+        val challenge = pkceChallenge(verifier)
+        val state = randomState()
+        secure.put(KEY_OAUTH_VERIFIER, verifier)
+        secure.put(KEY_OAUTH_STATE, state)
+
+        return buildString {
+            append(COLAB_CLI_AUTH_ENDPOINT)
+            append("?response_type=code")
+            append("&client_id=").append(urlEncode(COLAB_CLI_CLIENT_ID))
+            append("&redirect_uri=").append(urlEncode(COLAB_CLI_REDIRECT_URI))
+            append("&scope=").append(urlEncode(COLAB_CLI_SCOPES.joinToString(" ")))
+            append("&state=").append(urlEncode(state))
+            append("&code_challenge=").append(urlEncode(challenge))
+            append("&code_challenge_method=S256")
+            append("&prompt=consent")
+            append("&token_usage=remote")
+            append("&access_type=offline")
+        }
+    }
+
+    suspend fun completeColabCliSignIn(code: String) {
+        _state.value = AuthState.Loading
+        try {
+            val verifier = secure.get(KEY_OAUTH_VERIFIER)
+                ?: throw AuthException("Sign-in was not started. Tap \"Open Google sign-in\" first.")
+            val tokens = withContext(Dispatchers.IO) {
+                exchangeColabCliCode(code.trim(), verifier)
+            }
+
+            // Use Colab's own client so refresh_token grants can be renewed.
+            prefs.clientId = COLAB_CLI_CLIENT_ID
+            secure.put(KEY_CLIENT_SECRET, COLAB_CLI_CLIENT_SECRET)
+
+            withContext(Dispatchers.IO) { validateColabToken(tokens.accessToken) }
+            val info = withContext(Dispatchers.IO) { fetchUserInfo(tokens.accessToken) }
+            storeTokens(tokens, info)
+
+            secure.remove(KEY_OAUTH_VERIFIER)
+            secure.remove(KEY_OAUTH_STATE)
+        } catch (e: Exception) {
+            _state.value = AuthState.Error(e.message ?: "Google sign-in failed.")
+            throw e
+        }
+    }
+
+    private fun exchangeColabCliCode(code: String, verifier: String): OAuthTokens {
+        val form = FormBody.Builder()
+            .add("code", code)
+            .add("client_id", COLAB_CLI_CLIENT_ID)
+            .add("client_secret", COLAB_CLI_CLIENT_SECRET)
+            .add("redirect_uri", COLAB_CLI_REDIRECT_URI)
+            .add("grant_type", "authorization_code")
+            .add("code_verifier", verifier)
+
+        val request = Request.Builder()
+            .url(TOKEN_ENDPOINT)
+            .post(form.build())
+            .build()
+
+        client.newCall(request).execute().use { response ->
+            val body = response.body?.string().orEmpty()
+            if (!response.isSuccessful) {
+                throw AuthException(oauthError(body, response.code))
+            }
+            val obj = json.parseToJsonElement(body).jsonObject
+            val access = obj["access_token"]?.jsonPrimitive?.content
+                ?: throw AuthException("Google did not return an access token.")
+            return OAuthTokens(
+                accessToken = access,
+                refreshToken = obj["refresh_token"]?.jsonPrimitive?.content,
+                idToken = obj["id_token"]?.jsonPrimitive?.content,
+                expiresInSeconds = obj["expires_in"]?.jsonPrimitive?.longOrNull ?: 3300L
+            )
+        }
+    }
+
+    /**
+     * Drops only the access token (keeps the refresh token) so the next
+     * [accessToken] call forces a refresh. Used on a 401 to recover without
+     * signing the user out.
+     */
+    fun invalidateAccessToken() {
+        secure.remove(KEY_ACCESS)
+        prefs.tokenExpiresAt = 0L
+        val current = _state.value
+        if (current is AuthState.SignedIn) {
+            _state.value = current.copy(expiresAt = 0L, canRefresh = canRefresh)
+        }
+    }
+
+    fun updateClientConfig(clientId: String, clientSecret: String) {        prefs.clientId = clientId.trim()
         if (clientSecret.isBlank()) {
             secure.remove(KEY_CLIENT_SECRET)
         } else {
@@ -156,6 +260,8 @@ class AuthRepository(
         secure.remove(KEY_ACCESS)
         secure.remove(KEY_REFRESH)
         secure.remove(KEY_ID)
+        secure.remove(KEY_OAUTH_VERIFIER)
+        secure.remove(KEY_OAUTH_STATE)
         prefs.tokenExpiresAt = 0L
         prefs.email = ""
         prefs.displayName = ""
@@ -168,8 +274,28 @@ class AuthRepository(
         _state.value = AuthState.Error("Google sign-in expired. Sign in again.")
     }
 
-    private fun storeTokens(tokens: OAuthTokens, info: UserInfo? = null) {
-        secure.put(KEY_ACCESS, tokens.accessToken)
+    private fun randomPkceVerifier(): String {
+        val bytes = ByteArray(64)
+        SecureRandom().nextBytes(bytes)
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
+    }
+
+    private fun pkceChallenge(verifier: String): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+            .digest(verifier.toByteArray(Charsets.US_ASCII))
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(digest)
+    }
+
+    private fun randomState(): String {
+        val bytes = ByteArray(24)
+        SecureRandom().nextBytes(bytes)
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
+    }
+
+    private fun urlEncode(value: String): String =
+        URLEncoder.encode(value, Charsets.UTF_8.name())
+
+    private fun storeTokens(tokens: OAuthTokens, info: UserInfo? = null) {        secure.put(KEY_ACCESS, tokens.accessToken)
         tokens.refreshToken?.takeIf { it.isNotBlank() }?.let { secure.put(KEY_REFRESH, it) }
         tokens.idToken?.takeIf { it.isNotBlank() }?.let { secure.put(KEY_ID, it) }
         prefs.tokenExpiresAt = System.currentTimeMillis() + tokens.expiresInSeconds * 1000L
@@ -328,5 +454,22 @@ class AuthRepository(
         const val KEY_REFRESH = "google_refresh_token"
         const val KEY_ID = "google_id_token"
         const val KEY_CLIENT_SECRET = "google_client_secret"
+        const val KEY_OAUTH_VERIFIER = "colab_cli_pkce_verifier"
+        const val KEY_OAUTH_STATE = "colab_cli_oauth_state"
+
+        const val COLAB_CLI_CLIENT_ID =
+            "764086051850-6qr4p6gpi6hn506pt8ejuq83di341hur.apps.googleusercontent.com"
+        const val COLAB_CLI_CLIENT_SECRET = "d-FL95Q19q7MQmFpd7hHD0Ty"
+        const val COLAB_CLI_REDIRECT_URI =
+            "https://sdk.cloud.google.com/applicationdefaultauthcode.html"
+        const val COLAB_CLI_AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/auth"
+        val COLAB_CLI_SCOPES = listOf(
+            "openid",
+            "https://www.googleapis.com/auth/userinfo.profile",
+            "https://www.googleapis.com/auth/userinfo.email",
+            "https://www.googleapis.com/auth/cloud-platform",
+            "https://www.googleapis.com/auth/colaboratory",
+            "https://www.googleapis.com/auth/drive.file"
+        )
     }
 }

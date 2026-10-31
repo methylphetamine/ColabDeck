@@ -35,14 +35,20 @@ object ColabSshSocket {
         val base = session.proxyUrl.toHttpUrlOrNull()
             ?: throw SshTransportException("Colab returned an invalid runtime URL.")
 
-        val url = base.newBuilder()
-            .scheme(if (base.isHttps) "wss" else "ws")
+        // OkHttp's HttpUrl only knows http/https, so build the query with an
+        // https URL and flip the scheme to wss/ws afterwards. Calling
+        // .scheme("wss") on the builder throws "unexpected scheme: wss".
+        val httpsUrl = base.newBuilder()
             .encodedPath("/colab/ssh")
             .encodedQuery(null)
             .addQueryParameter("colab-runtime-proxy-token", session.proxyToken)
             .addQueryParameter("colab-client-agent", "colabdeck")
             .addQueryParameter("colab-client-agent", "ssh-mode-interactive")
             .build()
+        val url = httpsUrl.toString().replaceFirst(
+            Regex("^https?://"),
+            if (base.isHttps) "wss://" else "ws://"
+        )
 
         val request = Request.Builder()
             .url(url)
