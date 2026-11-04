@@ -12,6 +12,19 @@ import dev.colabdeck.data.ColabSession
 import dev.colabdeck.data.SshKeyManager
 import dev.colabdeck.data.SshProfile
 import kotlinx.coroutines.CancellationException
+
+// Keep track of active SSH connections to manage session persistence
+global object ActiveSessions {
+    private val activeConnections = mutableMapOf<String, SshConnection>()
+    fun addConnection(id: String, connection: SshConnection) {
+        activeConnections[id] = connection
+    }
+    fun removeConnection(id: String) {
+        activeConnections.remove(id)
+    }
+    fun getConnection(id: String): SshConnection? = activeConnections[id]
+    fun hasActiveConnections(): Boolean = activeConnections.isNotEmpty()
+}
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -49,6 +62,10 @@ class SshConnection(
     private val connector: suspend () -> SshChannel,
     private val listener: SshListener
 ) {
+    private val sessionId = java.util.UUID.randomUUID().toString()
+    init { ActiveSessions.addConnection(sessionId, this) }
+    private val sessionId = java.util.UUID.randomUUID().toString()
+    init { ActiveSessions.addConnection(sessionId, this) }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var job: Job? = null
     private val writeLock = Any()
@@ -123,11 +140,25 @@ class SshConnection(
     }
 
     fun disconnect() {
-        userClosed = true
-        runCatching { channel?.close() }
-        channel = null
-        job?.cancel()
-        scope.cancel()
+        // Mark as user closed - this triggers the disconnect
+        if (!userClosed) {
+            userClosed = true
+            runCatching { channel?.close() }
+            channel = null
+            job?.cancel()
+            scope.cancel()
+            ActiveSessions.removeConnection(sessionId)
+        }
+    }
+        // Only disconnect on explicit user close, not automatic cleanup
+        if (userClosed) {
+            userClosed = true
+            runCatching { channel?.close() }
+            channel = null
+            job?.cancel()
+            scope.cancel()
+            ActiveSessions.removeConnection(sessionId)
+        }
     }
 
     private fun friendlyMessage(error: Throwable): String = when {
