@@ -61,6 +61,9 @@ class TerminalController {
         view.settings.loadWithOverviewMode = false
         view.settings.useWideViewPort = false
         view.settings.textZoom = 100
+        view.isVerticalScrollBarEnabled = true
+        view.isHorizontalScrollBarEnabled = true
+        view.setNestedScrollingEnabled(true)
         view.setBackgroundColor(android.graphics.Color.parseColor("#070B10"))
         view.addJavascriptInterface(bridge, "Android")
         view.webViewClient = object : WebViewClient() {
