@@ -25,6 +25,7 @@ global object ActiveSessions {
     fun getConnection(id: String): SshConnection? = activeConnections[id]
     fun hasActiveConnections(): Boolean = activeConnections.isNotEmpty()
 }
+
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -62,8 +63,6 @@ class SshConnection(
     private val connector: suspend () -> SshChannel,
     private val listener: SshListener
 ) {
-    private val sessionId = java.util.UUID.randomUUID().toString()
-    init { ActiveSessions.addConnection(sessionId, this) }
     private val sessionId = java.util.UUID.randomUUID().toString()
     init { ActiveSessions.addConnection(sessionId, this) }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -142,16 +141,6 @@ class SshConnection(
     fun disconnect() {
         // Mark as user closed - this triggers the disconnect
         if (!userClosed) {
-            userClosed = true
-            runCatching { channel?.close() }
-            channel = null
-            job?.cancel()
-            scope.cancel()
-            ActiveSessions.removeConnection(sessionId)
-        }
-    }
-        // Only disconnect on explicit user close, not automatic cleanup
-        if (userClosed) {
             userClosed = true
             runCatching { channel?.close() }
             channel = null
