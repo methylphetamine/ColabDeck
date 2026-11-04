@@ -7,29 +7,30 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import dev.colabdeck.ui.theme.Type.ColabTypography
 
 private val ColabColors = darkColorScheme(
     primary = Cyan,
     onPrimary = ColorOnCyan,
-    primaryContainer = CyanDim,
+    primaryContainer = SurfaceElevation2,
     onPrimaryContainer = TextPrimary,
     secondary = Violet,
     onSecondary = ColorOnViolet,
-    secondaryContainer = Color(0xFF2E2350),
+    secondaryContainer = SurfaceElevation3,
     onSecondaryContainer = TextPrimary,
     tertiary = Amber,
     onTertiary = Color(0xFF1C1200),
     background = Ink,
     onBackground = TextPrimary,
-    surface = InkElevated,
+    surface = SurfaceElevation1,
     onSurface = TextPrimary,
-    surfaceVariant = InkRaised,
+    surfaceVariant = SurfaceElevation2,
     onSurfaceVariant = TextSecondary,
     outline = InkBorder,
-    outlineVariant = Color(0xFF1B2735),
+    outlineVariant = SurfaceElevation3,
     error = Rose,
     onError = Color(0xFF2A0710),
-    errorContainer = Color(0xFF3B0D1A),
+    errorContainer = SurfaceElevation4,
     onErrorContainer = Color(0xFFFFD9DF),
     scrim = Color(0xCC000000)
 )
