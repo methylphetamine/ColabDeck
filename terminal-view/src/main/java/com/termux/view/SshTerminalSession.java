@@ -1,6 +1,7 @@
 package com.termux.view;
 
 import com.termux.terminal.TerminalOutput;
+import com.termux.terminal.TerminalEmulator;
 
 import android.annotation.SuppressLint;
 import android.os.Handler;

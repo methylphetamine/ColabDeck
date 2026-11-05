@@ -65,6 +65,8 @@ public class SshTerminalSessionClient implements TerminalViewClient {
     @Override
     public boolean isTerminalViewSelected() { return true; }
     @Override
+    public void onEmulatorSet() {}
+    @Override
     public void copyModeChanged(boolean copyMode) {}
     @Override
     public float onScale(float scale) { return scale; }
