@@ -1,27 +1,43 @@
 package com.termux.view;
 
+import android.view.KeyEvent;
+import android.view.MotionEvent;
+
 import com.termux.terminal.TerminalSession;
-import com.termux.view.TerminalViewClient;
 
 public class SshTerminalSessionClient implements TerminalViewClient {
     @Override
-    public void onTextChanged(TerminalSession changedSession) {}
+    public float onScale(float scale) { return scale; }
     @Override
-    public void onTitleChanged(TerminalSession changedSession) {}
+    public void onSingleTapUp(MotionEvent e) {}
     @Override
-    public void onSessionFinished(TerminalSession finishedSession) {}
+    public boolean shouldBackButtonBeMappedToEscape() { return false; }
     @Override
-    public void onCopyTextToClipboard(TerminalSession session, String text) {}
+    public boolean shouldEnforceCharBasedInput() { return false; }
     @Override
-    public void onPasteTextFromClipboard(TerminalSession session) {}
+    public boolean shouldUseCtrlSpaceWorkaround() { return false; }
     @Override
-    public void onBell(TerminalSession session) {}
+    public boolean isTerminalViewSelected() { return true; }
     @Override
-    public void onColorsChanged(TerminalSession session) {}
+    public void copyModeChanged(boolean copyMode) {}
     @Override
-    public void onTerminalCursorStateChange(boolean state) {}
+    public boolean onKeyDown(int keyCode, KeyEvent e, TerminalSession session) { return false; }
     @Override
-    public int getTerminalCursorBlinkRate() { return 0; }
+    public boolean onKeyUp(int keyCode, KeyEvent e) { return false; }
+    @Override
+    public boolean onLongPress(MotionEvent event) { return false; }
+    @Override
+    public boolean readControlKey() { return false; }
+    @Override
+    public boolean readAltKey() { return false; }
+    @Override
+    public boolean readShiftKey() { return false; }
+    @Override
+    public boolean readFnKey() { return false; }
+    @Override
+    public boolean onCodePoint(int codePoint, boolean ctrlDown, TerminalSession session) { return false; }
+    @Override
+    public void onEmulatorSet() {}
     @Override
     public void logError(String tag, String message) {}
     @Override
@@ -36,36 +52,4 @@ public class SshTerminalSessionClient implements TerminalViewClient {
     public void logStackTraceWithMessage(String tag, String message, Exception e) {}
     @Override
     public void logStackTrace(String tag, Exception e) {}
-    @Override
-    public boolean onCodePoint(int codePoint, boolean ctrlDown, TerminalSession session) { return false; }
-    @Override
-    public boolean onKeyDown(int keyCode, android.view.KeyEvent e, TerminalSession session) { return false; }
-    @Override
-    public boolean onKeyUp(int keyCode, android.view.KeyEvent e) { return false; }
-    @Override
-    public boolean onLongPress(android.view.MotionEvent event) { return false; }
-    @Override
-    public boolean readControlKey() { return false; }
-    @Override
-    public boolean readAltKey() { return false; }
-    @Override
-    public boolean readShiftKey() { return false; }
-    @Override
-    public boolean readFnKey() { return false; }
-    @Override
-    public void onSingleTapUp(android.view.MotionEvent e) {}
-    @Override
-    public boolean shouldBackButtonBeMappedToEscape() { return false; }
-    @Override
-    public boolean shouldEnforceCharBasedInput() { return false; }
-    @Override
-    public boolean shouldUseCtrlSpaceWorkaround() { return false; }
-    @Override
-    public boolean isTerminalViewSelected() { return true; }
-    @Override
-    public void onEmulatorSet() {}
-    @Override
-    public void copyModeChanged(boolean copyMode) {}
-    @Override
-    public float onScale(float scale) { return scale; }
 }
