@@ -15,4 +15,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "ColabDeck"
-include(":app")
+include(":app", ":terminal-emulator", ":terminal-view")
