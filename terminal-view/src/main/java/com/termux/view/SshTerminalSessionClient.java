@@ -1,8 +1,6 @@
 package com.termux.view;
 
 import com.termux.terminal.TerminalSession;
-
-import com.termux.terminal.TerminalSession;
 import com.termux.view.TerminalViewClient;
 
 public class SshTerminalSessionClient implements TerminalViewClient {
@@ -39,7 +37,7 @@ public class SshTerminalSessionClient implements TerminalViewClient {
     @Override
     public void logStackTrace(String tag, Exception e) {}
     @Override
-    public boolean onCodePoint(int codePoint, boolean ctrl, boolean alt, boolean shift) { return false; }
+    public boolean onCodePoint(int codePoint, boolean ctrlDown, TerminalSession session) { return false; }
     @Override
     public boolean onKeyDown(int keyCode, android.view.KeyEvent e, TerminalSession session) { return false; }
     @Override
