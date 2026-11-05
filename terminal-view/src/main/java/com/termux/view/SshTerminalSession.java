@@ -55,13 +55,6 @@ public class SshTerminalSession extends TerminalOutput {
         }
     }
 
-    public void write(String data) {
-        if (data != null) {
-            byte[] bytes = data.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-            write(bytes, 0, bytes.length);
-        }
-    }
-
     public void writeCodePoint(boolean prependEscape, int codePoint) {
         int bufferPosition = 0;
         byte[] buffer = new byte[5];
@@ -86,6 +79,18 @@ public class SshTerminalSession extends TerminalOutput {
 
     @Override
     public void titleChanged(String oldTitle, String newTitle) {}
+
+    @Override
+    public void onCopyTextToClipboard(String text) {}
+
+    @Override
+    public void onPasteTextFromClipboard() {}
+
+    @Override
+    public void onBell() {}
+
+    @Override
+    public void onColorsChanged() {}
 
     public void reset() {
         if (mEmulator != null) {
