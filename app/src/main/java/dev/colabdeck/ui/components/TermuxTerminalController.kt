@@ -17,7 +17,7 @@ class TermuxTerminalController {
     var onResize: ((Int, Int) -> Unit)? = null
     var onReady: (() -> Unit)? = null
 
-    private val sessionClient = com.termux.view.SshTerminalSessionClient()
+    private val sessionClient = com.termux.view.com.termux.view.SshTerminalSessionClient()
 
     fun attach(context: Context, view: TerminalView) {
         terminalView = view

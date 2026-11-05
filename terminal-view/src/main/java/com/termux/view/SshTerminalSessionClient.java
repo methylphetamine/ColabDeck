@@ -1,9 +1,11 @@
 package com.termux.view;
 
 import com.termux.terminal.TerminalSession;
-import com.termux.terminal.TerminalSessionClient;
 
-public class SshTerminalSessionClient implements TerminalSessionClient {
+import com.termux.terminal.TerminalSession;
+import com.termux.view.TerminalViewClient;
+
+public class SshTerminalSessionClient implements TerminalViewClient {
     @Override
     public void onTextChanged(TerminalSession changedSession) {}
     @Override

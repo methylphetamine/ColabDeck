@@ -775,13 +775,13 @@ public final class TerminalView extends View {
             stopTextSelectionMode();
         }
 
-        if (mClient.onKeyDown(keyCode, event, mTermSession)) {
+        if (mClient.onKeyDown(keyCode, event, null)) {
             invalidate();
             return true;
         } else if (event.isSystem() && (!mClient.shouldBackButtonBeMappedToEscape() || keyCode != KeyEvent.KEYCODE_BACK)) {
             return super.onKeyDown(keyCode, event);
         } else if (event.getAction() == KeyEvent.ACTION_MULTIPLE && keyCode == KeyEvent.KEYCODE_UNKNOWN) {
-            mTermSession.write(event.getCharacters());
+            mTermSession.write(event.getCharacters().getBytes(), 0, event.getCharacters().length());
             return true;
         } else if (keyCode == KeyEvent.KEYCODE_LANGUAGE_SWITCH) {
             return super.onKeyDown(keyCode, event);
@@ -859,7 +859,7 @@ public final class TerminalView extends View {
         final boolean controlDown = controlDownFromEvent || mClient.readControlKey();
         final boolean altDown = leftAltDownFromEvent || mClient.readAltKey();
 
-        if (mClient.onCodePoint(codePoint, controlDown, mTermSession)) return;
+        if (mClient.onCodePoint(codePoint, controlDown, null)) return;
 
         if (controlDown) {
             if (codePoint >= 'a' && codePoint <= 'z') {
@@ -1087,7 +1087,7 @@ public final class TerminalView extends View {
     @Override
     public void autofill(AutofillValue value) {
         if (value.isText()) {
-            mTermSession.write(value.getTextValue().toString());
+            mTermSession.write(value.getTextValue().toString().getBytes(), 0, value.getTextValue().toString().length());
         }
 
         resetAutoFill();
