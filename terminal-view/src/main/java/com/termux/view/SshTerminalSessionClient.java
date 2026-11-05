@@ -19,6 +19,8 @@ public class SshTerminalSessionClient implements TerminalViewClient, com.termux.
     @Override
     public boolean isTerminalViewSelected() { return true; }
     @Override
+    public void onSessionFinished(com.termux.terminal.TerminalSession session) {}
+    @Override
     public void onCopyTextToClipboard(com.termux.terminal.TerminalSession session, String text) {}
     @Override
     public void onPasteTextFromClipboard(com.termux.terminal.TerminalSession session) {}
