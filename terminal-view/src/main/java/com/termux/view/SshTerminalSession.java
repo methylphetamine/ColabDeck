@@ -1,5 +1,7 @@
 package com.termux.view;
 
+import com.termux.terminal.TerminalOutput;
+
 import android.annotation.SuppressLint;
 import android.os.Handler;
 import android.os.Message;
