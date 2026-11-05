@@ -19,6 +19,8 @@ public class SshTerminalSessionClient implements TerminalViewClient, com.termux.
     @Override
     public boolean isTerminalViewSelected() { return true; }
     @Override
+    public Integer getTerminalCursorStyle() { return null; }
+    @Override
     public void copyModeChanged(boolean copyMode) {}
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent e, TerminalSession session) { return false; }
