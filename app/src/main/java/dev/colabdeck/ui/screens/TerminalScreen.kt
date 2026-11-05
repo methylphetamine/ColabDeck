@@ -69,8 +69,8 @@ import dev.colabdeck.ssh.SshConnection
 import dev.colabdeck.ssh.SshListener
 import dev.colabdeck.ssh.SshState
 import dev.colabdeck.ui.components.StatusDot
-import dev.colabdeck.ui.components.TerminalController
-import dev.colabdeck.ui.components.TerminalWebView
+import dev.colabdeck.ui.components.TermuxTerminalController
+import dev.colabdeck.ui.components.TermuxTerminalComposable
 import dev.colabdeck.ui.theme.Amber
 import dev.colabdeck.ui.theme.Cyan
 import dev.colabdeck.ui.theme.Ink
@@ -101,7 +101,7 @@ fun TerminalScreen(
     onBack: () -> Unit,
     onOpenFiles: (String) -> Unit
 ) {
-    val controller = remember { TerminalController() }
+    val controller = remember { TermuxTerminalController() }
     val connectionRef = remember { AtomicReference<SshConnection?>(null) }
     val main = remember { Handler(Looper.getMainLooper()) }
     val prefs = remember { vm.prefs() }
@@ -338,7 +338,7 @@ fun TerminalScreen(
                     .weight(1f)
                     .fillMaxWidth()
             ) {
-                TerminalWebView(
+                TermuxTerminalComposable(
                     controller = controller,
                     modifier = Modifier.fillMaxSize()
                 )

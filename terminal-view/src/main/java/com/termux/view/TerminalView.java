@@ -39,7 +39,7 @@ import androidx.annotation.RequiresApi;
 
 import com.termux.terminal.KeyHandler;
 import com.termux.terminal.TerminalEmulator;
-import com.termux.terminal.TerminalSession;
+import dev.colabdeck.ui.components.SshTerminalSession;
 import com.termux.view.textselection.TextSelectionCursorController;
 
 /** View displaying and interacting with a {@link TerminalSession}. */
@@ -49,7 +49,7 @@ public final class TerminalView extends View {
     private static boolean TERMINAL_VIEW_KEY_LOGGING_ENABLED = false;
 
     /** The currently displayed terminal session, whose emulator is {@link #mEmulator}. */
-    public TerminalSession mTermSession;
+    public SshTerminalSession mTermSession;
     /** Our terminal emulator whose session is {@link #mTermSession}. */
     public TerminalEmulator mEmulator;
 
@@ -287,7 +287,7 @@ public final class TerminalView extends View {
      *
      * @param session The {@link TerminalSession} this view will be displaying.
      */
-    public boolean attachSession(TerminalSession session) {
+    public boolean attachSession(SshTerminalSession session) {
         if (session == mTermSession) return false;
 
         mTermSession = session;
@@ -1036,7 +1036,7 @@ public final class TerminalView extends View {
         }
     }
 
-    public TerminalSession getCurrentSession() {
+    public SshTerminalSession getCurrentSession() {
         return mTermSession;
     }
 
