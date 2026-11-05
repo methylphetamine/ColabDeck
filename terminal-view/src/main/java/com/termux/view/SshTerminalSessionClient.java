@@ -5,7 +5,7 @@ import android.view.MotionEvent;
 
 import com.termux.terminal.TerminalSession;
 
-public class SshTerminalSessionClient implements TerminalViewClient {
+public class SshTerminalSessionClient implements TerminalViewClient, com.termux.terminal.TerminalSessionClient {
     @Override
     public float onScale(float scale) { return scale; }
     @Override
