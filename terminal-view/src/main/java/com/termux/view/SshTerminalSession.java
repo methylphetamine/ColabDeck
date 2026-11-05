@@ -7,7 +7,7 @@ import com.termux.terminal.TerminalSessionClient;
 import android.os.Handler;
 
 public class SshTerminalSession extends TerminalOutput {
-    TerminalEmulator mEmulator;
+    public TerminalEmulator mEmulator;
     TerminalSessionClient mClient;
     Integer mTranscriptRows;
     int mShellPid = -1;
