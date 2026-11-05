@@ -13,18 +13,6 @@ import dev.colabdeck.data.SshKeyManager
 import dev.colabdeck.data.SshProfile
 import kotlinx.coroutines.CancellationException
 
-// Keep track of active SSH connections to manage session persistence
-global object ActiveSessions {
-    private val activeConnections = mutableMapOf<String, SshConnection>()
-    fun addConnection(id: String, connection: SshConnection) {
-        activeConnections[id] = connection
-    }
-    fun removeConnection(id: String) {
-        activeConnections.remove(id)
-    }
-    fun getConnection(id: String): SshConnection? = activeConnections[id]
-    fun hasActiveConnections(): Boolean = activeConnections.isNotEmpty()
-}
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -37,6 +25,18 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.net.Socket
+// Keep track of active SSH connections to manage session persistence
+object ActiveSessions {
+    private val activeConnections = mutableMapOf<String, SshConnection>()
+    fun addConnection(id: String, connection: SshConnection) {
+        activeConnections[id] = connection
+    }
+    fun removeConnection(id: String) {
+        activeConnections.remove(id)
+    }
+    fun getConnection(id: String): SshConnection? = activeConnections[id]
+    fun hasActiveConnections(): Boolean = activeConnections.isNotEmpty()
+}
 
 enum class SshState {
     CONNECTING,
