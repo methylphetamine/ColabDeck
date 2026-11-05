@@ -1,4 +1,4 @@
-package dev.colabdeck.ui.components;
+package com.termux.view;
 
 import android.annotation.SuppressLint;
 import android.os.Handler;
