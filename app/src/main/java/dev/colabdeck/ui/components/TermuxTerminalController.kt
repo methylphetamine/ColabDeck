@@ -26,6 +26,7 @@ class TermuxTerminalController {
         session.setSshCallback { bytes ->
             onInput?.invoke(bytes)
         }
+        view.setTerminalViewClient(sessionClient)
         view.attachSession(session)
         view.setTextSize(14)
         view.requestFocus()
