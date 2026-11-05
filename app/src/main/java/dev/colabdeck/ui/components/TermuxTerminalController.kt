@@ -17,11 +17,11 @@ class TermuxTerminalController {
     var onResize: ((Int, Int) -> Unit)? = null
     var onReady: (() -> Unit)? = null
 
-    private val sessionClient = com.termux.view.com.termux.view.SshTerminalSessionClient()
+    private val sessionClient = com.termux.view.SshTerminalSessionClient()
 
     fun attach(context: Context, view: TerminalView) {
         terminalView = view
-        val session = com.termux.view.SshTerminalSession(sessionClient, 80, 24)
+        val session = com.termux.view.SshTerminalSession(sessionClient, null)
         sshSession = session
         session.setSshCallback { bytes ->
             onInput?.invoke(bytes)

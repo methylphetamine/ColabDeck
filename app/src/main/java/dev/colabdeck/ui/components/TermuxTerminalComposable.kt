@@ -14,7 +14,7 @@ fun TermuxTerminalComposable(
     AndroidView(
         modifier = modifier,
         factory = { context ->
-            TerminalView(context).also { view ->
+            TerminalView(context, null).also { view ->
                 controller.attach(context, view)
             }
         }
